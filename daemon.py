@@ -5,9 +5,8 @@ import signal
 import sys
 import time
 
-import directory_parser
-import logutils
-import yaml
+from dir_scanner import scanner
+from utils import yaml, logutils
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 def traversal_daemon(dir, db_name, interval_sec=5):
     try:
         while True:
-            directory_parser.traverse(dir, db_name)
+            scanner.scan_directory(dir, db_name)
             time.sleep(interval_sec)
     except BaseException as e:
         logger.error(f"{str(e.__class__.__name__)} - {str(e)}")
