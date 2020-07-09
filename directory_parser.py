@@ -8,10 +8,16 @@ logger = logging.getLogger(__name__)
 
 
 def traverse(dir: str, db_name: str):
+    """
+    Recursively goes through the directory and stores its structure
+    to the sqlite database file
+    :param dir: relative or absolute path to a directory to parse
+    :param db_name: name for a database file
+    """
     if not os.path.isdir(dir):
         raise ValueError(f"{dir} is not a valid directory")
     # root traversal is a predictable depth_first
-    with Storage(db_name, drop=True) as storage:
+    with Storage(db_name) as storage:
         for current_dir, dirs, files in os.walk(os.path.abspath(dir)):
             logger.info(f"Processing directory: '{current_dir}'")
             cur_dir_id = storage.create_directory(current_dir)

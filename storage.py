@@ -1,11 +1,8 @@
-import logging
 import sqlite3
 from datetime import datetime
 from typing import Sequence
 
 import queries
-
-logger = logging.getLogger(__name__)
 
 
 class Storage:
