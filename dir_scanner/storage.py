@@ -1,5 +1,4 @@
 import sqlite3
-from datetime import datetime
 from typing import Sequence
 
 import utils.queries as Q
@@ -32,12 +31,14 @@ class Storage:
         # not consuming the exception here
         return False
 
-    def save_file(self, filename, parent_dir_id, permissions, sha256):
+    def save_file(self, filename, modification_date,
+                  parent_dir_id, permissions, sha256):
         """
         Updates a file entry that corresponds to the filename and parent_dir_id.
         Or saves an entry in case it doesn't exist
 
         :param filename:
+        :param modification_date:
         :param parent_dir_id:
         :param permissions:
         :param sha256:
@@ -50,12 +51,13 @@ class Storage:
             self.conn.execute(
                 "INSERT into file (dir_id, filename, last_modified, "
                 "permissions, sha256) VALUES (?,?,?,?,?)",
-                (parent_dir_id, filename, datetime.now(), permissions, sha256))
+                (parent_dir_id, filename, modification_date,
+                 permissions, sha256))
         else:
             self.conn.execute(
                 "UPDATE file set last_modified = ?, "
                 "permissions = ?, sha256 = ? where id = ?",
-                (datetime.now(), permissions, sha256, file_record['id']))
+                (modification_date, permissions, sha256, file_record['id']))
 
     def _save_directory(self, dir_path, parent_dir):
         return self.conn.execute(
@@ -77,30 +79,17 @@ class Storage:
             dir_cache[dir_path] = dir_id
         return dir_cache
 
-    def fetch_files(self, dir_path):
+    def drop_old_files(self, dir_id, modification_date):
         """
-        Returns all files stored inside the directory
-        :param dir_path:
-        :return: dict {filename -> file_id}
+        Drops all file entries that belong in the directory
+        with id=dir_id which haven't changed since modification_date
+        :param dir_id:
+        :param modification_date:
+        :return:
         """
-        # indexed query
-        result = self.conn.execute(
-            "SELECT file.filename,file.id from file join directory "
-            "on dir_id=directory.id "
-            "where directory.dir_path = ?", (dir_path,))
-        file_cache = {}
-        for filename, file_id in result:
-            file_cache[filename] = file_id
-        return file_cache
-
-    def drop_files(self, file_ids: Sequence):
-        """
-        Deletes file entries with ids from file_ids
-        :param file_ids:
-        """
-        if file_ids and len(file_ids) != 0:
-            self.conn.execute(f"DELETE FROM file where id in ("
-                              f"{_plug_in_params(file_ids)})", file_ids)
+        self.conn.execute(f"DELETE FROM file where dir_id = ?"
+                          f" and last_modified < ?",
+                          (dir_id, modification_date))
 
     def drop_dirs(self, dir_ids: Sequence):
         """

@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 
 from utils import fileutils
 from .storage import Storage
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def scan_directory(dir: str, db_name: str):
     """
-    Recursively goes through the directory and stores its structure
+    Recursively goes through the directory and saves its structure
     to the sqlite database file
     :param dir: relative or absolute path to a directory to parse
     :param db_name: name for a database file
@@ -24,8 +25,8 @@ def scan_directory(dir: str, db_name: str):
         for current_dir, dirs, files in os.walk(abspath):
             logger.info(f"Processing directory: '{current_dir}'")
             cur_dir_id = storage.create_directory(current_dir)
-            # filename - id
-            existing_files = storage.fetch_files(current_dir)
+
+            modification_date = datetime.now()
             for filename in files:
                 logger.info(f"Found file '{filename}'")
 
@@ -35,11 +36,13 @@ def scan_directory(dir: str, db_name: str):
                 except Exception as e:
                     logger.error(f"Error parsing file: str{e}")
                 else:
-                    storage.save_file(file_path, cur_dir_id, permissions, sha256)
-                    existing_files.pop(file_path, None)
-            # drop deleted file entries
-            storage.drop_files(list(existing_files.values()))
-
+                    storage.save_file(filename=file_path,
+                                      modification_date=modification_date,
+                                      parent_dir_id=cur_dir_id,
+                                      permissions=permissions,
+                                      sha256=sha256)
+            # drop files that were deleted from the file system
+            storage.drop_old_files(cur_dir_id, modification_date)
             # dir_path - id
             existing_dirs = storage.fetch_subdirs(cur_dir_id)
             for dirname in dirs:
