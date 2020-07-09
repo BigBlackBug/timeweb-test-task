@@ -19,7 +19,7 @@ def scan_directory(dir: str, db_name: str):
     # root traversal is a predictable depth_first
     with Storage(db_name) as storage:
         abspath = os.path.abspath(dir)
-        logger.info(f"Started scanning for '{abspath}'")
+        logger.info(f"Started scanning '{abspath}'")
 
         for current_dir, dirs, files in os.walk(abspath):
             logger.info(f"Processing directory: '{current_dir}'")
