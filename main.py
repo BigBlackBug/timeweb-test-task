@@ -9,15 +9,16 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Saves the directory structure '
-                    'to the supplied database file')
+                    'to the supplied database file. \n '
+                    'All paths in arguments can be relative or absolute')
     parser.add_argument("-d", "--directory", required=True, type=str,
-                        help="dir")
+                        help="path to the directory to be scanned")
     parser.add_argument("-b", "--database", required=True, type=str,
-                        help="db name")
+                        help="path to the database file")
     parser.add_argument("-l", "--log", required=True, type=str,
-                        help="log file")
+                        help="path to the logfile")
     parser.add_argument("-v", "--verbose", action="store_true",
-                        help="verbose")
+                        help="if set, prints logging messages to stdout")
 
     args = parser.parse_args()
 
