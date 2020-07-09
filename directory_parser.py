@@ -18,7 +18,10 @@ def traverse(dir: str, db_name: str):
         raise ValueError(f"{dir} is not a valid directory")
     # root traversal is a predictable depth_first
     with Storage(db_name) as storage:
-        for current_dir, dirs, files in os.walk(os.path.abspath(dir)):
+        abspath = os.path.abspath(dir)
+        logger.info(f"Started traversal for '{abspath}'")
+
+        for current_dir, dirs, files in os.walk(abspath):
             logger.info(f"Processing directory: '{current_dir}'")
             cur_dir_id = storage.create_directory(current_dir)
             # filename - id

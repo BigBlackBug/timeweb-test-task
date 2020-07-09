@@ -1,8 +1,8 @@
 import argparse
 import logging
-import sys
 
 import directory_parser
+import logutils
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +22,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    handlers = [logging.FileHandler(filename=args.log, mode='a')]
-    if args.verbose:
-        handlers.append(logging.StreamHandler(sys.stdout))
-        # noinspection PyArgumentList
-        logging.basicConfig(handlers=handlers, level=logging.INFO,
-                            format='%(asctime)s %(levelname)-5s %(message)s')
+    logutils.configure_logging(args.log, args.verbose)
 
     # TODO parse args errors
     # validate directory, database, log
