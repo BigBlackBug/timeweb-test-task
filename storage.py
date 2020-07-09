@@ -1,8 +1,11 @@
+import logging
 import sqlite3
 from datetime import datetime
 from typing import Sequence
 
 import queries
+
+logger = logging.getLogger(__name__)
 
 
 class Storage:
@@ -24,11 +27,8 @@ class Storage:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            print("ex")
-            # log exceptions
-            pass
         self.conn.close()
+        # not consuming the exception here
         return False
 
     def save_file(self, filename, parent_dir, permissions, sha256):
@@ -41,8 +41,8 @@ class Storage:
                 parent_dir, filename, datetime.now(), permissions, sha256))
         else:
             self.conn.execute(
-                "UPDATE file set last_modified = ?, permissions = ?, sha256 = ?"
-                " where id = ?",
+                "UPDATE file set last_modified = ?, permissions = ?, sha256 = ? "
+                "where id = ?",
                 (datetime.now(), permissions, sha256, file_record['id']))
 
     def save_dir(self, dir_path, parent_dir):
