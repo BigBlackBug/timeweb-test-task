@@ -1,9 +1,13 @@
-MAKE_TABLES = """ 
+CREATE_TABLES = """ 
 CREATE TABLE if not exists directory(
     id integer PRIMARY KEY, 
-    parent_dir_id integer  REFERENCES directory(id),
+    parent_dir_id integer REFERENCES directory(id),
     dir_path text NOT NULL
 );
+CREATE UNIQUE INDEX IF NOT EXISTS directory_unique_path_index 
+ON directory(dir_path);
+CREATE INDEX IF NOT EXISTS directory_parent_id_index 
+ON directory(parent_dir_id);
 CREATE TABLE if not exists file(
     id integer PRIMARY KEY, 
     dir_id integer REFERENCES directory(id) ON DELETE CASCADE,
@@ -14,12 +18,5 @@ CREATE TABLE if not exists file(
 );"""
 
 DROP_TABLES = "DROP table if exists file; DROP table if exists directory"
-
-INSERT_FILE = """
-    INSERT into file (dir_id, filename, last_modified, permissions, sha256) 
-    VALUES (?,?,?,?,?) 
-"""
-
-INSERT_DIR = "INSERT into directory (parent_dir_id,dir_path) VALUES (?,?)"
 
 ENABLE_FK = "PRAGMA foreign_keys = ON;"

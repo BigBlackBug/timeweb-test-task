@@ -11,7 +11,7 @@ from utils import yaml, logutils
 logger = logging.getLogger(__name__)
 
 
-def traversal_daemon(dir, db_name, interval_sec=5):
+def scanner_daemon(dir, db_name, interval_sec=5):
     try:
         while True:
             scanner.scan_directory(dir, db_name)
@@ -22,7 +22,7 @@ def traversal_daemon(dir, db_name, interval_sec=5):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Runs a directory traversal script')
+        description='Runs a directory scanner script')
     parser.add_argument("-c", "--config", required=True, type=str,
                         help="path to a config file", )
     args = parser.parse_args()
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         logger.error(f"{str(e.__class__.__name__)} - {str(e)}")
     else:
         logutils.configure_logging(config['log'], True)
-        traversal = multiprocessing.Process(target=traversal_daemon,
+        traversal = multiprocessing.Process(target=scanner_daemon,
                                             args=(
                                                 config['directory'],
                                                 config['database']),

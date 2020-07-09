@@ -5,6 +5,10 @@ from typing import Sequence
 import utils.queries as Q
 
 
+def _plug_in_params(values: Sequence) -> str:
+    return ','.join(['?'] * len(values))
+
+
 class Storage:
     def __init__(self, db_file, drop=False):
         self.db_file = db_file
@@ -20,7 +24,7 @@ class Storage:
         self.conn = conn
         if self.drop:
             self.conn.executescript(Q.DROP_TABLES)
-        self.conn.executescript(Q.MAKE_TABLES)
+        self.conn.executescript(Q.CREATE_TABLES)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -28,25 +32,42 @@ class Storage:
         # not consuming the exception here
         return False
 
-    def save_file(self, filename, parent_dir, permissions, sha256):
+    def save_file(self, filename, parent_dir_id, permissions, sha256):
+        """
+        Updates a file entry that corresponds to the filename and parent_dir_id.
+        Or saves an entry in case it doesn't exist
+
+        :param filename:
+        :param parent_dir_id:
+        :param permissions:
+        :param sha256:
+        """
         file_record = self.conn.execute(
             "SELECT * from file where dir_id = ? and filename = ?",
-            (parent_dir, filename)).fetchone()
+            (parent_dir_id, filename)).fetchone()
         if not file_record:
             # insert
-            self.conn.execute(Q.INSERT_FILE, (
-                parent_dir, filename, datetime.now(), permissions, sha256))
+            self.conn.execute(
+                "INSERT into file (dir_id, filename, last_modified, "
+                "permissions, sha256) VALUES (?,?,?,?,?)",
+                (parent_dir_id, filename, datetime.now(), permissions, sha256))
         else:
             self.conn.execute(
-                "UPDATE file set last_modified = ?, permissions = ?, sha256 = ? "
-                "where id = ?",
+                "UPDATE file set last_modified = ?, "
+                "permissions = ?, sha256 = ? where id = ?",
                 (datetime.now(), permissions, sha256, file_record['id']))
 
-    def save_dir(self, dir_path, parent_dir):
-        return self.conn.execute(Q.INSERT_DIR, (parent_dir, dir_path))
+    def _save_directory(self, dir_path, parent_dir):
+        return self.conn.execute(
+            "INSERT INTO directory (parent_dir_id,dir_path)"
+            "VALUES (?,?)", (parent_dir, dir_path))
 
     def fetch_subdirs(self, dir_id):
-        # select all dirs
+        """
+        Returns all directory entries inside the dir_id
+        :param dir_id:
+        :return: dict {directory path -> directory id}
+        """
         dir_cache = {}
         result = self.conn.execute(
             "SELECT id, parent_dir_id, dir_path from directory "
@@ -57,6 +78,12 @@ class Storage:
         return dir_cache
 
     def fetch_files(self, dir_path):
+        """
+        Returns all files stored inside the directory
+        :param dir_path:
+        :return: dict {filename -> file_id}
+        """
+        # indexed query
         result = self.conn.execute(
             "SELECT file.filename,file.id from file join directory "
             "on dir_id=directory.id "
@@ -67,32 +94,53 @@ class Storage:
         return file_cache
 
     def drop_files(self, file_ids: Sequence):
+        """
+        Deletes file entries with ids from file_ids
+        :param file_ids:
+        """
         if file_ids and len(file_ids) != 0:
             self.conn.execute(f"DELETE FROM file where id in ("
-                              f"{self._plug_params(file_ids)})", file_ids)
-
-    def _plug_params(self, values: Sequence) -> str:
-        return ','.join(['?'] * len(values))
+                              f"{_plug_in_params(file_ids)})", file_ids)
 
     def drop_dirs(self, dir_ids: Sequence):
+        """
+        Deletes directory entries with ids from dir_ids.
+        Also deletes all file entries related to the each directory.
+        :param dir_ids:
+        """
         if dir_ids and len(dir_ids) != 0:
             self.conn.execute(f"DELETE FROM directory where id in ("
-                              f"{self._plug_params(dir_ids)})", dir_ids)
+                              f"{_plug_in_params(dir_ids)})", dir_ids)
 
     def create_directory(self, dir_path, parent_dir_id=None):
+        """
+        Returns the directory id, corresponding to the provided
+        directory path.
+        If it doesn't exist, creates the directory entry.
+        :param dir_path:
+        :param parent_dir_id:
+        :return: directory id
+        """
+        # indexed query
         directory = self.conn.execute(
             "select id from directory where dir_path=?",
             (dir_path,)).fetchone()
 
         if not directory:
+            # TODO a potential bug
             parent_id = parent_dir_id or self.get_parent_dir(dir_path)
-            row = self.save_dir(dir_path, parent_id)
+            row = self._save_directory(dir_path, parent_id)
             return row.lastrowid
         return directory['id']
 
     def get_parent_dir(self, dir_path):
+        """
+        Returns a directory entry which is a parent to dir_path
+        :param dir_path:
+        """
         parent_path = dir_path[:-dir_path.rfind('/')]
 
+        # indexed query
         return self.conn.execute(
             "SELECT id from directory where dir_path = ?",
             (parent_path,)).fetchone()
