@@ -15,11 +15,15 @@ CREATE TABLE IF NOT EXISTS file(
     last_modified TIMESTAMP NOT NULL,
     permissions INTEGER NOT NULL,
     sha256 char(64) NOT NULL
-);"""
+);
+CREATE INDEX IF NOT EXISTS file_timestamp_index 
+ON file(last_modified);
+"""
 
 DROP_TABLES = "DROP TABLE IF EXISTS file;" \
               "DROP TABLE IF EXISTS directory;" \
               "DROP INDEX IF EXISTS directory_unique_path_index;" \
-              "DROP INDEX IF EXISTS directory_parent_id_index;"
+              "DROP INDEX IF EXISTS directory_parent_id_index;" \
+              "DROP INDEX IF EXISTS file_timestamp_index;"
 
 ENABLE_FK = "PRAGMA foreign_keys = ON;"
