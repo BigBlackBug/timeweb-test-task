@@ -25,9 +25,7 @@ if __name__ == '__main__':
 
     logutils.configure_logging(args.log, args.verbose)
 
-    # TODO parse args errors
-    # validate directory, database, log
-    logger.info(f"Directory parser started for "
+    logger.info(f"Directory scanner started for "
                 f"directory: '{args.directory}' "
                 f"database: '{args.database}' "
                 f"logfile: '{args.log}' "
@@ -36,4 +34,4 @@ if __name__ == '__main__':
         scanner.scan_directory(args.directory, args.database)
     except Exception as e:
         logger.error(f"{str(e.__class__.__name__)} - {str(e)}")
-    logger.info(f"Directory parser DONE")
+    logger.info(f"Directory scanner DONE")
