@@ -27,19 +27,23 @@ def scan_directory(dir: str, db_name: str):
             # filename - id
             existing_files = storage.fetch_files(current_dir)
             for filename in files:
-                logger.info(f"Found file {filename}")
+                logger.info(f"Found file '{filename}'")
 
                 file_path = os.path.join(current_dir, filename)
-                sha256, permissions = fileutils.process_file(file_path)
-                storage.save_file(file_path, cur_dir_id, permissions, sha256)
-                existing_files.pop(file_path, None)
+                try:
+                    sha256, permissions = fileutils.process_file(file_path)
+                except Exception as e:
+                    logger.error(f"Error parsing file: str{e}")
+                else:
+                    storage.save_file(file_path, cur_dir_id, permissions, sha256)
+                    existing_files.pop(file_path, None)
             # drop deleted file entries
             storage.drop_files(list(existing_files.values()))
 
             # dir_path - id
             existing_dirs = storage.fetch_subdirs(cur_dir_id)
             for dirname in dirs:
-                logger.info(f"Found sub directory {dirname}")
+                logger.info(f"Found sub directory '{dirname}'")
 
                 dir_path = os.path.join(current_dir, dirname)
                 storage.create_directory(dir_path, parent_dir_id=cur_dir_id)
